@@ -3,17 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZET display</title>
+    <title>ZET DISPLAY</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
+        /* --- TEME I BOJE --- */
         :root {
+            /* ZADANO (NARANČASTO - Retro Amber) */
             --led-color: #ffaa00;
-            --led-sched: #b37700; /* Tamnija boja za raspored */
-            --led-dim: #2a1a00;
-            --bg-color: #000000;
+            --led-sched: #b37700;
+            --led-dim: #2a1a00; /* Boja neaktivnih točkica */
+            --bg-color: #111;   /* Tamna pozadina */
+            --glow: 0 0 4px var(--led-color), 0 0 8px var(--led-color); /* Jači sjaj */
+            --glow-sched: 0 0 3px var(--led-sched); /* Slabiji sjaj za raspored */
         }
-        
+
+        /* ZELENA TEMA (Realistična ZET zelena) */
+        body.green-mode {
+            --led-color: #c0e020; /* Realistična žućkasto-zelena */
+            --led-sched: #708010; /* Tamnija, zagasita zelena za raspored */
+            --led-dim: #1a2200;   /* Jako tamna zeleno-crna za pozadinu točkica */
+        }
+
         * { box-sizing: border-box; }
 
         body {
@@ -25,29 +36,35 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background-image: radial-gradient(var(--led-dim) 1px, transparent 1px);
-            background-size: 4px 4px; 
+            /* Realistična tekstura točkica */
+            background-image: radial-gradient(var(--led-dim) 30%, transparent 35%);
+            background-size: 4px 4px;
+            /* Dodajemo sjaj tekstu */
+            text-shadow: var(--glow);
+            transition: color 0.3s, text-shadow 0.3s;
         }
+
+        /* --- BLINKANJE (Može se isključiti) --- */
+        .blink { animation: blinker 0.6s step-end infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+        body.no-blink .blink { animation: none; opacity: 1; }
 
         /* --- SETUP --- */
         #setup-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            background: #000;
-            z-index: 100;
-            position: absolute;
-            width: 100%; top: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100%; background: var(--bg-color); z-index: 100; position: absolute; width: 100%; top: 0;
+            /* I setup ekran treba imati teksturu */
+            background-image: radial-gradient(var(--led-dim) 30%, transparent 35%);
+            background-size: 4px 4px;
         }
         input {
-            padding: 15px; font-size: 2rem; background: #111;
+            padding: 15px; font-size: 2rem; background: #000;
             color: var(--led-color); border: 2px solid var(--led-color);
             border-radius: 4px; width: 80%; max-width: 500px;
             text-align: center; font-family: inherit; text-transform: uppercase;
-            box-shadow: 0 0 15px var(--led-color); outline: none;
+            box-shadow: var(--glow); outline: none; /* Sjaj i na inputu */
         }
+        h2 { text-shadow: var(--glow); } /* Sjaj na naslovu */
 
         /* --- DISPLAY --- */
         #display-screen {
@@ -58,40 +75,81 @@
         header {
             border-bottom: 3px solid var(--led-color); margin-bottom: 10px; padding-bottom: 5px;
             display: flex; justify-content: space-between; align-items: flex-end;
+            box-shadow: 0 3px 5px -3px var(--led-color); /* Sjaj linije */
         }
-        h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); text-transform: uppercase; text-shadow: 0 0 5px var(--led-color); line-height: 1; }
+        h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); text-transform: uppercase; line-height: 1; }
         .clock { font-size: clamp(2rem, 4vw, 3rem); opacity: 0.9; }
 
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; font-size: 1.5rem; color: var(--led-color); opacity: 0.7; padding-bottom: 5px; border-bottom: 1px dashed var(--led-dim); font-weight: normal; }
-        td { font-size: clamp(2.5rem, 6vw, 6rem); padding: 2px 0; white-space: nowrap; text-shadow: 0 0 3px var(--led-color); }
+        th { 
+            text-align: left; font-size: 1.5rem; color: var(--led-color); opacity: 0.7; 
+            padding-bottom: 5px; border-bottom: 1px dashed var(--led-dim); font-weight: normal;
+            text-shadow: none; /* Zaglavlje ne treba jaki sjaj */
+        }
+        td { font-size: clamp(2.5rem, 6vw, 6rem); padding: 2px 0; white-space: nowrap; }
 
         .linija { width: 15%; }
         .smjer { width: 55%; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
         .vrijeme { width: 30%; text-align: right; }
 
-        /* Stilovi za SCHEDULED vs LIVE */
-        tr.sched td { color: var(--led-sched); text-shadow: none; } /* Tamnije za raspored */
-        tr.sched .vrijeme::after { content: "*"; font-size: 0.5em; vertical-align: top; opacity: 0.7; }
-
-        .blink { animation: blinker 0.6s step-end infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
-
-        .corner-controls { position: fixed; top: 10px; right: 10px; display: flex; gap: 15px; z-index: 200; }
+        /* Stil za RASPORED (tamnije, manji sjaj) */
+        tr.sched td { 
+            color: var(--led-sched); 
+            text-shadow: var(--glow-sched);
+        }
+        
+        /* --- KONTROLE I IZBORNIK --- */
+        .corner-controls { position: fixed; top: 10px; right: 10px; display: flex; gap: 10px; z-index: 200; }
         :fullscreen .corner-controls { display: none; }
-        .icon-btn { background: #000; border: 1px solid var(--led-dim); color: var(--led-color); cursor: pointer; font-size: 1.5rem; padding: 5px 10px; font-family: inherit; }
+        
+        .btn { 
+            background: #000; border: 1px solid var(--led-color); color: var(--led-color); 
+            cursor: pointer; font-size: 1.2rem; padding: 5px 10px; font-family: inherit; 
+            text-transform: uppercase; box-shadow: var(--glow-sched);
+        }
+        .btn:hover { background: var(--led-dim); }
 
-        #msg-box { text-align: center; font-size: 2rem; margin-top: 20vh; color: var(--led-dim); display: none; }
+        /* Settings Panel */
+        #settings-panel {
+            display: none; position: absolute; top: 50px; right: 10px; 
+            background: #000; border: 2px solid var(--led-color); padding: 15px;
+            z-index: 201; flex-direction: column; gap: 10px; width: 250px;
+            box-shadow: var(--glow);
+        }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; }
+        .setting-row label { cursor: pointer; }
+        hr { border-top: 1px dashed var(--led-dim); }
+
+        #msg-box { text-align: center; font-size: 2rem; margin-top: 20vh; color: var(--led-dim); display: none; text-shadow: none; }
     </style>
 </head>
 <body>
+
     <div class="corner-controls">
-        <button class="icon-btn" onclick="toggleFullScreen()">FULLSCREEN</button>
-        <button class="icon-btn" onclick="exitKiosk()">X</button>
+        <button class="btn" onclick="toggleSettings()">OPCIJE</button>
+        <button class="btn" onclick="toggleFullScreen()">FULLSCREEN</button>
+        <button class="btn" onclick="exitKiosk()">X</button>
+    </div>
+
+    <div id="settings-panel">
+        <div class="setting-row">
+            <label for="chk-green">ZELENI EKRAN</label>
+            <input type="checkbox" id="chk-green" onchange="updateSettings()">
+        </div>
+        <div class="setting-row">
+            <label for="chk-blink">BLINKANJE</label>
+            <input type="checkbox" id="chk-blink" checked onchange="updateSettings()">
+        </div>
+        <div class="setting-row">
+            <label for="chk-sad">PIŠI "SAD"</label>
+            <input type="checkbox" id="chk-sad" onchange="updateSettings()">
+        </div>
+        <hr style="width:100%; border:0;">
+        <button class="btn" style="width:100%" onclick="toggleSettings()">ZATVORI</button>
     </div>
 
     <div id="setup-screen">
-        <h2 style="font-size: 4rem; margin-bottom: 20px; text-shadow: 0 0 10px var(--led-color); font-weight: normal;">ZET DISPLAY</h2>
+        <h2>ZET DISPLAY</h2>
         <input list="stations-list" id="station-input" placeholder="Učitavam..." disabled autocomplete="off">
         <datalist id="stations-list"></datalist>
     </div>
@@ -115,8 +173,41 @@
     </div>
 
     <script>
+        // --- POSTAVKE (LOCAL STORAGE) ---
+        let settings = { greenMode: false, blinking: true, useSadText: false };
+
+        function loadSettings() {
+            const saved = localStorage.getItem('zet_settings');
+            if (saved) settings = JSON.parse(saved);
+            document.getElementById('chk-green').checked = settings.greenMode;
+            document.getElementById('chk-blink').checked = settings.blinking;
+            document.getElementById('chk-sad').checked = settings.useSadText;
+            applyStyles();
+        }
+
+        function updateSettings() {
+            settings.greenMode = document.getElementById('chk-green').checked;
+            settings.blinking = document.getElementById('chk-blink').checked;
+            settings.useSadText = document.getElementById('chk-sad').checked;
+            localStorage.setItem('zet_settings', JSON.stringify(settings));
+            applyStyles();
+        }
+
+        function applyStyles() {
+            settings.greenMode ? document.body.classList.add('green-mode') : document.body.classList.remove('green-mode');
+            !settings.blinking ? document.body.classList.add('no-blink') : document.body.classList.remove('no-blink');
+        }
+
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        // --- STANDARDNA LOGIKA ---
         const urlParams = new URLSearchParams(window.location.search);
         let currentStation = urlParams.get('station');
+
+        loadSettings();
 
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toLocaleTimeString('hr-HR', {hour:'2-digit', minute:'2-digit'});
@@ -125,9 +216,7 @@
         fetch('/api/stations').then(r => r.json()).then(data => {
             const list = document.getElementById('stations-list');
             const input = document.getElementById('station-input');
-            data.forEach(s => {
-                const opt = document.createElement('option'); opt.value = s; list.appendChild(opt);
-            });
+            data.forEach(s => { const opt = document.createElement('option'); opt.value = s; list.appendChild(opt); });
             input.disabled = false; input.placeholder = "UPIŠI STANICU..."; input.focus();
         });
 
@@ -147,15 +236,13 @@
         }
 
         function exitKiosk() { window.location.href = window.location.pathname.split('?')[0]; }
-        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        function toggleFullScreen() { !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen(); }
 
         function startBoard(stationName) {
             const fetchData = async () => {
                 try {
-                    // NOVI ENDPOINT: šaljemo ime stanice, backend vraća sve izračunato
                     const res = await fetch(`/api/board?station=${encodeURIComponent(stationName)}`);
-                    const data = await res.json();
-                    renderBoard(data);
+                    renderBoard(await res.json());
                 } catch(e) { console.error(e); }
             };
             fetchData();
@@ -165,29 +252,20 @@
         function renderBoard(data) {
             const tbody = document.getElementById('board');
             tbody.innerHTML = '';
-            
             if (data.length === 0) {
                 document.getElementById('msg-box').style.display = 'block';
             } else {
                 document.getElementById('msg-box').style.display = 'none';
-                data.slice(0, 7).forEach(d => {
+                data.slice(0, 15).forEach(d => {
                     let minText = d.min + " min";
-                    let rowClass = (d.status === "SCHED") ? "sched" : ""; // Klasa za boju
-                    
+                    let rowClass = (d.status === "SCHED") ? "sched" : ""; 
                     if (d.status === "LIVE" && d.min <= 0) {
-                        minText = "<<<"; rowClass += " blink";
+                        minText = settings.useSadText ? "SAD" : "<<<"; 
+                        rowClass += " blink";
                     } else if (d.status === "SCHED") {
-                        // Ako je po rasporedu, prikaži točno vrijeme (npr 14:20) umjesto minuta,
-                        // ili minute sa zvjezdicom. Ovdje stavljam minute.
-                        minText = d.time; // Prikazuje npr. "14:25" umjesto "5 min"
+                        minText = d.time; 
                     }
-
-                    tbody.innerHTML += `
-                        <tr class="${rowClass}">
-                            <td class="linija">${d.linija}</td>
-                            <td class="smjer">${d.smjer}</td>
-                            <td class="vrijeme">${minText}</td>
-                        </tr>`;
+                    tbody.innerHTML += `<tr class="${rowClass}"><td class="linija">${d.linija}</td><td class="smjer">${d.smjer}</td><td class="vrijeme">${minText}</td></tr>`;
                 });
             }
         }
