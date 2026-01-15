@@ -3,24 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZET Display</title>
+    <title>ZET Hybrid</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
-        /* --- SAKRIVANJE GUMBA U FULLSCREENU --- */
-        :fullscreen .corner-controls {
-            display: none;
-        }
-        /* Za svaki slučaj (stariji browseri/Safari) */
-        :-webkit-full-screen .corner-controls {
-            display: none;
-        }
-        :-ms-fullscreen .corner-controls {
-            display: none;
-        }
         :root {
             --led-color: #ffaa00;
-            --led-dim: #4a3200;
+            --led-sched: #b37700; /* Tamnija boja za raspored */
+            --led-dim: #2a1a00;
             --bg-color: #000000;
         }
         
@@ -29,7 +19,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--led-color);
-            font-family: 'VT323', monospace; /* NOVI FONT */
+            font-family: 'VT323', monospace;
             margin: 0;
             height: 100vh;
             display: flex;
@@ -39,7 +29,7 @@
             background-size: 4px 4px; 
         }
 
-        /* --- SETUP EKRAN --- */
+        /* --- SETUP --- */
         #setup-screen {
             display: flex;
             flex-direction: column;
@@ -49,135 +39,61 @@
             background: #000;
             z-index: 100;
             position: absolute;
-            width: 100%;
-            top: 0;
+            width: 100%; top: 0;
         }
-        
         input {
-            padding: 15px;
-            font-size: 2rem; /* Veći font za unos */
-            background: #111;
-            color: var(--led-color);
-            border: 2px solid var(--led-color);
-            border-radius: 4px;
-            width: 80%;
-            max-width: 500px;
-            text-align: center;
-            font-family: inherit;
-            text-transform: uppercase;
-            box-shadow: 0 0 15px var(--led-color);
-            outline: none;
-        }
-        
-        input::placeholder {
-            color: var(--led-dim);
-            opacity: 0.7;
+            padding: 15px; font-size: 2rem; background: #111;
+            color: var(--led-color); border: 2px solid var(--led-color);
+            border-radius: 4px; width: 80%; max-width: 500px;
+            text-align: center; font-family: inherit; text-transform: uppercase;
+            box-shadow: 0 0 15px var(--led-color); outline: none;
         }
 
-        /* --- DISPLAY EKRAN --- */
+        /* --- DISPLAY --- */
         #display-screen {
-            display: none; 
-            flex-direction: column;
-            height: 100%;
-            padding: 10px 15px;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
+            display: none; flex-direction: column; height: 100%;
+            padding: 10px 15px; width: 100%; max-width: 1200px; margin: 0 auto;
         }
 
         header {
-            border-bottom: 3px solid var(--led-color);
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
+            border-bottom: 3px solid var(--led-color); margin-bottom: 10px; padding-bottom: 5px;
+            display: flex; justify-content: space-between; align-items: flex-end;
         }
-
-        h1 {
-            margin: 0;
-            font-size: clamp(2.5rem, 6vw, 5rem);
-            text-transform: uppercase;
-            text-shadow: 0 0 5px var(--led-color); 
-            line-height: 1;
-            font-weight: normal;
-        }
-
-        .clock {
-            font-size: clamp(2rem, 4vw, 3rem);
-            opacity: 0.9;
-        }
+        h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); text-transform: uppercase; text-shadow: 0 0 5px var(--led-color); line-height: 1; }
+        .clock { font-size: clamp(2rem, 4vw, 3rem); opacity: 0.9; }
 
         table { width: 100%; border-collapse: collapse; }
-        
-        th {
-            text-align: left;
-            font-size: 1.5rem;
-            color: var(--led-color);
-            opacity: 0.7;
-            padding-bottom: 5px;
-            border-bottom: 1px dashed var(--led-dim);
-            font-weight: normal;
-        }
-
-        td {
-            font-size: clamp(2.5rem, 6vw, 6rem); /* Još veća slova */
-            padding: 5px 0;
-            white-space: nowrap;
-            text-shadow: 0 0 3px var(--led-color); 
-        }
+        th { text-align: left; font-size: 1.5rem; color: var(--led-color); opacity: 0.7; padding-bottom: 5px; border-bottom: 1px dashed var(--led-dim); font-weight: normal; }
+        td { font-size: clamp(2.5rem, 6vw, 6rem); padding: 2px 0; white-space: nowrap; text-shadow: 0 0 3px var(--led-color); }
 
         .linija { width: 15%; }
-        .smjer { width: 60%; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
-        .vrijeme { width: 25%; text-align: right; }
+        .smjer { width: 55%; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+        .vrijeme { width: 30%; text-align: right; }
+
+        /* Stilovi za SCHEDULED vs LIVE */
+        tr.sched td { color: var(--led-sched); text-shadow: none; } /* Tamnije za raspored */
+        tr.sched .vrijeme::after { content: "*"; font-size: 0.5em; vertical-align: top; opacity: 0.7; }
 
         .blink { animation: blinker 0.6s step-end infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
 
-        #msg-box {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-top: 20vh;
-            border: 2px dashed var(--led-dim);
-            padding: 30px;
-            color: var(--led-dim);
-            display: none;
-        }
-        
-        .corner-controls {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 15px;
-            z-index: 200;
-        }
-        
-        .icon-btn {
-            background: #000;
-            border: 1px solid var(--led-dim);
-            color: var(--led-color);
-            cursor: pointer;
-            font-size: 1.5rem;
-            padding: 5px 10px;
-            font-family: inherit;
-        }
+        .corner-controls { position: fixed; top: 10px; right: 10px; display: flex; gap: 15px; z-index: 200; }
+        :fullscreen .corner-controls { display: none; }
+        .icon-btn { background: #000; border: 1px solid var(--led-dim); color: var(--led-color); cursor: pointer; font-size: 1.5rem; padding: 5px 10px; font-family: inherit; }
+
+        #msg-box { text-align: center; font-size: 2rem; margin-top: 20vh; color: var(--led-dim); display: none; }
     </style>
 </head>
 <body>
-
     <div class="corner-controls">
         <button class="icon-btn" onclick="toggleFullScreen()">FULLSCREEN</button>
         <button class="icon-btn" onclick="exitKiosk()">X</button>
     </div>
 
     <div id="setup-screen">
-        <h2 style="font-size: 4rem; margin-bottom: 20px; text-shadow: 0 0 10px var(--led-color); font-weight: normal;">ZET MONITOR</h2>
-        
-        <input list="stations-list" id="station-input" placeholder="Učitavam popis stanica..." disabled autocomplete="off">
+        <h2 style="font-size: 4rem; margin-bottom: 20px; text-shadow: 0 0 10px var(--led-color); font-weight: normal;">ZET HYBRID</h2>
+        <input list="stations-list" id="station-input" placeholder="Učitavam..." disabled autocomplete="off">
         <datalist id="stations-list"></datalist>
-        
-        <p id="status-text" style="margin-top: 15px; font-size: 1.5rem; color: var(--led-dim);">Spajanje na server...</p>
     </div>
 
     <div id="display-screen">
@@ -185,18 +101,16 @@
             <h1 id="station-title">...</h1>
             <div class="clock" id="clock">00:00</div>
         </header>
-        
         <table>
             <thead>
                 <tr>
                     <th>LINIJA</th>
                     <th>ODREDIŠTE</th>
-                    <th style="text-align: right">MIN</th>
+                    <th style="text-align: right">DOLAZAK</th>
                 </tr>
             </thead>
             <tbody id="board"></tbody>
         </table>
-
         <div id="msg-box">NEMA NAJAVA</div>
     </div>
 
@@ -204,119 +118,46 @@
         const urlParams = new URLSearchParams(window.location.search);
         let currentStation = urlParams.get('station');
 
-        // Sat
         setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString('hr-HR', {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('hr-HR', {hour:'2-digit', minute:'2-digit'});
         }, 1000);
 
-        // Funkcija za dohvat stanica s retry logikom
-        function fetchStations() {
-            fetch('/api/stations')
-                .then(r => {
-                    if(!r.ok) throw new Error("Server error");
-                    return r.json();
-                })
-                .then(data => {
-                    const list = document.getElementById('stations-list');
-                    const input = document.getElementById('station-input');
-                    const status = document.getElementById('status-text');
-                    
-                    list.innerHTML = ""; // Očisti stare ako ih ima
-                    data.forEach(s => {
-                        const opt = document.createElement('option');
-                        opt.value = s;
-                        list.appendChild(opt);
-                    });
+        fetch('/api/stations').then(r => r.json()).then(data => {
+            const list = document.getElementById('stations-list');
+            const input = document.getElementById('station-input');
+            data.forEach(s => {
+                const opt = document.createElement('option'); opt.value = s; list.appendChild(opt);
+            });
+            input.disabled = false; input.placeholder = "UPIŠI STANICU..."; input.focus();
+        });
 
-                    // Otključaj input kad su podaci spremni
-                    input.disabled = false;
-                    input.placeholder = "UPIŠI STANICU (npr. TRG)...";
-                    status.innerText = `Učitano ${data.length} stanica.`;
-                    status.style.opacity = 0; // Sakrij status nakon loadinga
-                    
-                    input.focus();
-                })
-                .catch(err => {
-                    console.error("Greška s dohvaćanjem stanica:", err);
-                    document.getElementById('status-text').innerText = "Server se budi... pričekaj 30 sekundi.";
-                    // Probaj ponovno za 5 sekundi
-                    setTimeout(fetchStations, 5000);
-                });
-        }
-
-        // Pokreni dohvat stanica odmah
-        fetchStations();
-
-        if (currentStation) {
-            enterKiosk(currentStation);
-        }
+        if (currentStation) enterKiosk(currentStation);
 
         document.getElementById('station-input').addEventListener('change', (e) => {
-            const val = e.target.value;
-            // Provjera: Postoji li ta stanica uopće u listi?
-            const options = document.getElementById('stations-list').options;
-            let exists = false;
-            for(let i=0; i<options.length; i++) {
-                if(options[i].value === val) exists = true;
-            }
-
-            if(exists) {
-                window.location.search = `?station=${encodeURIComponent(val)}`;
-            } else {
-                alert("Molim odaberi stanicu s popisa!");
-                e.target.value = "";
-            }
+            if(e.target.value) window.location.search = `?station=${encodeURIComponent(e.target.value)}`;
         });
 
         function enterKiosk(stationName) {
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('display-screen').style.display = 'flex';
-            
-            const decodedName = decodeURIComponent(stationName);
-            document.getElementById('station-title').innerText = decodedName;
-            document.title = decodedName;
-            
-            startLiveFeed(decodedName);
+            const decoded = decodeURIComponent(stationName);
+            document.getElementById('station-title').innerText = decoded;
+            document.title = decoded;
+            startBoard(decoded);
         }
 
-        function exitKiosk() {
-            window.location.href = window.location.pathname.split('?')[0];
-        }
-        
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(e => console.log(e));
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
-        }
+        function exitKiosk() { window.location.href = window.location.pathname.split('?')[0]; }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
 
-        function startLiveFeed(stationName) {
+        function startBoard(stationName) {
             const fetchData = async () => {
                 try {
-                    const res = await fetch('/api/live');
-                    const vozila = await res.json();
-                    
-                    const now = Math.floor(Date.now() / 1000);
-                    const dolasci = [];
-                    const targetClean = stationName.trim().toLowerCase();
-
-                    vozila.forEach(v => {
-                        const staje = v.stanice.find(s => s.stopName.trim().toLowerCase() === targetClean);
-                        if (staje) {
-                            const min = Math.round((staje.time - now) / 60);
-                            if (min >= -2) dolasci.push({ ...v, min });
-                        }
-                    });
-
-                    dolasci.sort((a,b) => a.min - b.min);
-                    renderBoard(dolasci);
+                    // NOVI ENDPOINT: šaljemo ime stanice, backend vraća sve izračunato
+                    const res = await fetch(`/api/board?station=${encodeURIComponent(stationName)}`);
+                    const data = await res.json();
+                    renderBoard(data);
                 } catch(e) { console.error(e); }
             };
-
             fetchData();
             setInterval(fetchData, 10000);
         }
@@ -329,13 +170,16 @@
                 document.getElementById('msg-box').style.display = 'block';
             } else {
                 document.getElementById('msg-box').style.display = 'none';
-                data.slice(0, 6).forEach(d => {
+                data.slice(0, 7).forEach(d => {
                     let minText = d.min + " min";
-                    let rowClass = "";
+                    let rowClass = (d.status === "SCHED") ? "sched" : ""; // Klasa za boju
                     
-                    if (d.min <= 0) {
-                        minText = "<<<"; 
-                        rowClass = "blink";
+                    if (d.status === "LIVE" && d.min <= 0) {
+                        minText = "<<<"; rowClass += " blink";
+                    } else if (d.status === "SCHED") {
+                        // Ako je po rasporedu, prikaži točno vrijeme (npr 14:20) umjesto minuta,
+                        // ili minute sa zvjezdicom. Ovdje stavljam minute.
+                        minText = d.time; // Prikazuje npr. "14:25" umjesto "5 min"
                     }
 
                     tbody.innerHTML += `
