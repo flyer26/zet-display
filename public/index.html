@@ -18,11 +18,15 @@
             --glow-sched: 0 0 3px var(--led-sched); /* Slabiji sjaj za raspored */
         }
 
-        /* ZELENA TEMA (Realistična ZET zelena) */
+/* ZELENA TEMA (Flip-Dot stil - bez sjaja) */
         body.green-mode {
-            --led-color: #c0e020; /* Realistična žućkasto-zelena */
-            --led-sched: #708010; /* Tamnija, zagasita zelena za raspored */
-            --led-dim: #1a2200;   /* Jako tamna zeleno-crna za pozadinu točkica */
+            --led-color: #c0e020; /* Žućkasto-zelena */
+            --led-sched: #50600a; /* Tamnija boja za raspored */
+            --led-dim: #1a2200;   /* Pozadina točkica */
+            
+            /* KLJUČNO: Isključujemo sjaj za "flat" izgled */
+            --glow: none;       
+            --glow-sched: none; 
         }
 
         * { box-sizing: border-box; }
