@@ -97,6 +97,15 @@
             color: var(--led-sched); 
             text-shadow: var(--glow-sched);
         }
+        /* Vraća zvjezdicu za raspored (SCHED) */
+        tr.sched .vrijeme::after { 
+            content: "*"; 
+            position: relative;
+            top: -5px;
+            font-size: 0.6em; 
+            opacity: 0.8;
+            margin-left: 2px;
+        }
         
         /* --- KONTROLE I IZBORNIK --- */
         .corner-controls { position: fixed; top: 10px; right: 10px; display: flex; gap: 10px; z-index: 200; }
