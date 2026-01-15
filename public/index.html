@@ -7,6 +7,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
+        /* --- SAKRIVANJE GUMBA U FULLSCREENU --- */
+        :fullscreen .corner-controls {
+            display: none;
+        }
+        /* Za svaki slučaj (stariji browseri/Safari) */
+        :-webkit-full-screen .corner-controls {
+            display: none;
+        }
+        :-ms-fullscreen .corner-controls {
+            display: none;
+        }
         :root {
             --led-color: #ffaa00;
             --led-dim: #4a3200;
