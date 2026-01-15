@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const https = require('https');
 const fs = require('fs');
-const readline = require('readline'); // NOVO: Za čitanje red po red
+const readline = require('readline');
 const Papa = require('papaparse');
 const AdmZip = require('adm-zip');
 const path = require('path');
@@ -13,21 +13,21 @@ const app = express();
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// KONFIGURACIJA
+// --- KONFIGURACIJA ---
 const ZET_RT_URL = 'https://zet.hr/gtfs-rt-protobuf'; 
 const ZET_GTFS_ZIP = 'https://www.zet.hr/gtfs-scheduled/latest';
 const UPDATE_INTERVAL = 24 * 60 * 60 * 1000; 
 
-// MEMORIJA
+// --- MEMORIJA ---
 let staticSchedule = {}; 
 let stationList = [];
 let routesMap = {};
 let cachedLiveData = null;
 let lastLiveFetch = 0;
 
-// --- POMOĆNE FUNKCIJE ---
+// Pomoćne funkcije za vrijeme
 function timeToMinutes(timeStr) {
-    if (!timeStr) return 0;
+    if (!timeStr) return 9999;
     const parts = timeStr.split(':');
     return parseInt(parts[0]) * 60 + parseInt(parts[1]);
 }
@@ -48,11 +48,15 @@ async function downloadAndUnzipGTFS() {
         if (!response.ok) throw new Error(response.statusText);
         const buffer = Buffer.from(await response.arrayBuffer());
         const zip = new AdmZip(buffer);
+        
+        // Izvlačimo i calendar_dates.txt (KLJUČNO ZA ZETKO LOGIKU)
         zip.extractEntryTo("routes.txt", "./", false, true);
         zip.extractEntryTo("stops.txt", "./", false, true);
         zip.extractEntryTo("trips.txt", "./", false, true);
         zip.extractEntryTo("calendar.txt", "./", false, true);
+        zip.extractEntryTo("calendar_dates.txt", "./", false, true); // <--- OVO NAM JE FALILO
         zip.extractEntryTo("stop_times.txt", "./", false, true);
+        
         console.log("📦 [SYSTEM] GTFS raspakiran.");
         return true;
     } catch (e) {
@@ -61,32 +65,53 @@ async function downloadAndUnzipGTFS() {
     }
 }
 
-function getTodayServiceIds(calendarFile) {
-    const content = fs.readFileSync(calendarFile, 'utf8');
-    const rows = Papa.parse(content, { header: true, skipEmptyLines: true }).data;
-    
-    const now = new Date();
+// --- POPRAVLJENA LOGIKA DATUMA (ZETKO STIL) ---
+function getActiveServiceIds() {
+    // 1. Odredi današnji datum (ZG zona)
+    const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Zagreb"}));
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const dd = String(now.getDate()).padStart(2, '0');
     const todayStr = `${yyyy}${mm}${dd}`;
+    
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const todayName = days[now.getDay()];
 
+    console.log(`📅 [SYSTEM] Računam vozni red za: ${todayStr} (${todayName})`);
+
+    const readCsv = (f) => Papa.parse(fs.readFileSync(f, 'utf8'), { header: true, skipEmptyLines: true }).data;
+    
+    const calendar = readCsv('calendar.txt');
+    const calendarDates = readCsv('calendar_dates.txt');
+
     const activeServices = new Set();
-    rows.forEach(row => {
+
+    // 1. Provjeri redovni raspored (calendar.txt)
+    calendar.forEach(row => {
         if (row[todayName] === '1' && todayStr >= row.start_date && todayStr <= row.end_date) {
             activeServices.add(row.service_id);
         }
     });
+
+    // 2. Provjeri iznimke (calendar_dates.txt) - OVO JE BITNO
+    // exception_type: 1 = dodaj uslugu, 2 = ukloni uslugu
+    calendarDates.forEach(row => {
+        if (row.date === todayStr) {
+            if (row.exception_type === '1') {
+                activeServices.add(row.service_id); // Dodaj extra vožnje
+            } else if (row.exception_type === '2') {
+                activeServices.delete(row.service_id); // Makni otkazane
+            }
+        }
+    });
+
+    console.log(`✅ [SYSTEM] Pronađeno ${activeServices.size} aktivnih tipova usluge.`);
     return activeServices;
 }
 
-// OVO JE KLJUČNA PROMJENA - STREAMING
 async function loadGtfsFilesToMemory() {
-    console.log("🔄 [SYSTEM] Gradim bazu (STREAMING MOD)...");
+    console.log("🔄 [SYSTEM] Gradim bazu...");
     
-    // 1. Učitaj male fajlove normalno
     const readCsv = (f) => Papa.parse(fs.readFileSync(f, 'utf8'), { header: true, skipEmptyLines: true }).data;
     const routes = readCsv('routes.txt');
     const stops = readCsv('stops.txt');
@@ -107,9 +132,13 @@ async function loadGtfsFilesToMemory() {
     });
     stationList.sort();
 
-    // 2. Filtriraj Tripove za DANAS
-    const activeServices = getTodayServiceIds('calendar.txt');
-    const activeTripsMap = new Map(); // Koristimo Map za brži pristup
+    // FILTRIRANJE TRIP-ova
+    const activeServices = getActiveServiceIds();
+    if (activeServices.size === 0) {
+        console.error("⚠️ [WARNING] Nema aktivnih servisa za danas! Provjeri datum servera.");
+    }
+
+    const activeTripsMap = new Map();
     
     trips.forEach(t => {
         if (activeServices.has(t.service_id)) {
@@ -120,73 +149,66 @@ async function loadGtfsFilesToMemory() {
         }
     });
 
-    console.log(`📅 [INFO] Danas aktivno: ${activeTripsMap.size} vožnji.`);
+    console.log(`🚌 [INFO] Ukupno aktivnih vožnji danas: ${activeTripsMap.size}`);
 
-    // 3. Čitaj STOP_TIMES red po red (Štedi RAM)
+    // STREAMING STOP_TIMES
     const fileStream = fs.createReadStream('stop_times.txt');
-    const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity
-    });
+    const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
     let counter = 0;
-    // Pretpostavljamo strukturu CSV-a: trip_id,arrival_time,departure_time,stop_id...
-    // ZET obično ima zaglavlje, pa preskačemo prvi red
-    let isFirstLine = true;
-    
-    // Mapiranje indeksa stupaca (za svaki slučaj da ZET promijeni redoslijed)
-    let idxTrip = 0;
-    let idxTime = 2; // departure_time
-    let idxStop = 3;
+    let isFirst = true;
+    let idxTrip=0, idxTime=2, idxStop=3; // Defaulti
 
     for await (const line of rl) {
-        if (isFirstLine) {
-            // Detektiraj stupce iz headera
-            const headers = line.split(',').map(h => h.trim().replace(/"/g, '')); // Makni navodnike
+        if (isFirst) {
+            // Dinamičko mapiranje stupaca
+            const headers = line.split(',').map(h => h.trim().replace(/"/g, ''));
             idxTrip = headers.indexOf('trip_id');
             idxTime = headers.indexOf('departure_time');
             idxStop = headers.indexOf('stop_id');
-            isFirstLine = false;
+            isFirst = false;
             continue;
         }
 
-        // Ručno parsiranje linije (brže od CSV parsera)
-        const cols = line.split(',');
-        const tripId = cols[idxTrip]; // trip_id
-
-        // Je li ovaj trip aktivan danas?
+        const cols = line.split(','); // Brzi split
+        // Pazi na navodnike ako ih ima
+        const tripId = cols[idxTrip].replace(/"/g, '');
+        
         if (activeTripsMap.has(tripId)) {
-            const stopId = cols[idxStop];
+            const stopId = cols[idxStop].replace(/"/g, '');
             const stopName = stopsIdToName[stopId];
             
             if (stopName) {
                 const tripInfo = activeTripsMap.get(tripId);
-                const depTime = cols[idxTime]; // Vrijeme string
+                const depTime = cols[idxTime].replace(/"/g, '');
+                
+                // ZET ima vremena tipa "24:30:00", to moramo podržati
+                const timeMin = timeToMinutes(depTime);
 
                 staticSchedule[stopName].push({
                     trip_id: tripId,
                     linija: routesMap[tripInfo.route_id],
                     smjer: tripInfo.headsign,
-                    timeMin: timeToMinutes(depTime),
-                    status: "SCHED",
-                    time: depTime.substring(0, 5) // Samo HH:MM
+                    timeMin: timeMin, 
+                    timeStr: depTime.substring(0, 5) // HH:MM
                 });
                 counter++;
             }
         }
     }
 
-    // Sortiranje nakon učitavanja
+    // Sortiraj svaku stanicu
     for (const station in staticSchedule) {
         staticSchedule[station].sort((a, b) => a.timeMin - b.timeMin);
     }
 
     console.log(`✅ [SYSTEM] Baza spremna! Učitano ${counter} dolazaka.`);
-    if (global.gc) global.gc(); // Forsiraj čišćenje RAM-a ako je moguće
+    if (global.gc) global.gc(); 
 }
 
 async function initializeSystem() {
-    if (!fs.existsSync('stop_times.txt')) await downloadAndUnzipGTFS();
+    // Uvijek skini svježe jer Render briše disk
+    await downloadAndUnzipGTFS();
     await loadGtfsFilesToMemory();
     
     setInterval(async () => {
@@ -194,8 +216,7 @@ async function initializeSystem() {
     }, UPDATE_INTERVAL);
 }
 
-// --- LIVE & API ---
-
+// --- LIVE API ---
 const agent = new https.Agent({ rejectUnauthorized: false, keepAlive: true });
 
 async function getLiveFeed() {
@@ -209,17 +230,21 @@ async function getLiveFeed() {
         
         const liveMap = {};
         feed.entity.forEach(e => {
-            if (e.tripUpdate && e.tripUpdate.stopTimeUpdate.length > 0) {
-                const update = e.tripUpdate.stopTimeUpdate[0];
-                const delay = update.departure?.delay || update.arrival?.delay || 0;
-                liveMap[e.tripUpdate.trip.tripId] = delay;
+            if (e.tripUpdate) {
+                const tripId = e.tripUpdate.trip.tripId;
+                // Pokušaj naći delay
+                if (e.tripUpdate.stopTimeUpdate && e.tripUpdate.stopTimeUpdate.length > 0) {
+                    const stu = e.tripUpdate.stopTimeUpdate[0];
+                    const delay = stu.departure?.delay || stu.arrival?.delay || 0;
+                    liveMap[tripId] = delay;
+                }
             }
         });
         cachedLiveData = liveMap;
         lastLiveFetch = now;
         return liveMap;
     } catch (e) {
-        console.error("Live fetch error", e.message);
+        console.error("ZET API Error:", e.message);
         return {};
     }
 }
@@ -237,40 +262,59 @@ app.get('/api/board', async (req, res) => {
     const schedule = staticSchedule[realStationName] || [];
     const liveDelays = await getLiveFeed();
     
-    // Trenutno vrijeme (ZG zona)
-    const now = new Date();
-    const localNow = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Zagreb"}));
-    const currentMinutes = localNow.getHours() * 60 + localNow.getMinutes();
+    // ZG vrijeme
+    const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Zagreb"}));
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     const board = [];
-    const TIME_WINDOW = 60; 
-
+    
+    // Gledamo raspored
     for (const trip of schedule) {
-        // Filtriraj: samo oni koji dolaze u idućih 60 min
-        if (trip.timeMin >= currentMinutes - 5 && trip.timeMin <= currentMinutes + TIME_WINDOW) {
-            let finalData = { ...trip }; // Kopija objekta
+        // Logika: Prikazujemo ako je po rasporedu u idućih 60 min
+        // ILI ako je prošao prije max 5 min (da ne pobjegne s ekrana odmah)
+        
+        // Ali moramo paziti na ponoć (npr. sad je 23:50, bus je u 00:10)
+        // Ovdje pojednostavljujemo: gledamo samo apsolutne minute
+        
+        if (trip.timeMin >= currentMinutes - 10 && trip.timeMin <= currentMinutes + 90) {
             
-            // Ako imamo live podatak
+            let finalTimeMin = trip.timeMin;
+            let status = "SCHED"; // Po rasporedu (sivo)
+            
+            // Ako imamo LIVE podatke za taj trip ID
             if (liveDelays[trip.trip_id] !== undefined) {
-                const delayMin = Math.round(liveDelays[trip.trip_id] / 60);
-                finalData.timeMin = trip.timeMin + delayMin;
-                finalData.min = finalData.timeMin - currentMinutes;
-                finalData.status = "LIVE";
-                finalData.time = minutesToTime(finalData.timeMin);
-            } else {
-                finalData.min = trip.timeMin - currentMinutes;
-                finalData.status = "SCHED";
+                const delaySec = liveDelays[trip.trip_id];
+                const delayMin = Math.round(delaySec / 60);
+                
+                finalTimeMin = trip.timeMin + delayMin;
+                status = "LIVE"; // Uživo (narančasto)
             }
-            board.push(finalData);
+
+            const minutesUntil = finalTimeMin - currentMinutes;
+
+            // Filtriraj: ne prikazuj ako je bus već otišao (npr prije 2 min)
+            // Ali ako kasni, onda ga prikazuj
+            if (minutesUntil >= -2) {
+                board.push({
+                    linija: trip.linija,
+                    smjer: trip.smjer,
+                    min: minutesUntil,
+                    time: minutesToTime(finalTimeMin),
+                    status: status
+                });
+            }
         }
     }
     
+    // Sortiraj po vremenu dolaska
     board.sort((a, b) => a.min - b.min);
-    res.json(board);
+    
+    // Vrati max 10 rezultata
+    res.json(board.slice(0, 15)); 
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
     await initializeSystem();
-    console.log(`🚀 STREAMING SERVER ONLINE: ${PORT}`);
+    console.log(`🚀 FINAL SERVER ONLINE: ${PORT}`);
 });
