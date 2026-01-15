@@ -141,7 +141,7 @@
             <input type="checkbox" id="chk-blink" checked onchange="updateSettings()">
         </div>
         <div class="setting-row">
-            <label for="chk-sad">PIŠI "SAD"</label>
+            <label for="chk-sad">PIŠI "sad"</label>
             <input type="checkbox" id="chk-sad" onchange="updateSettings()">
         </div>
         <hr style="width:100%; border:0;">
@@ -260,7 +260,7 @@
                     let minText = d.min + " min";
                     let rowClass = (d.status === "SCHED") ? "sched" : ""; 
                     if (d.status === "LIVE" && d.min <= 0) {
-                        minText = settings.useSadText ? "SAD" : "<<<"; 
+                        minText = settings.useSadText ? "sad" : "<<<"; 
                         rowClass += " blink";
                     } else if (d.status === "SCHED") {
                         minText = d.time; 
