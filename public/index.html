@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ZGLEDAJ</title>
+    
     <link rel="manifest" href="/manifest.json">
-    
-    
     <link rel="icon" type="image/png" href="/zg-icon.png">
     <link rel="apple-touch-icon" href="/zg-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +14,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    <style>
+<style>
         /* --- TEME I BOJE --- */
         :root {
             --led-color: #ffaa00;
@@ -101,9 +100,22 @@
             display: none; font-size: 2rem; padding: 10px 40px; 
             background: var(--led-color); color: #000; border: none; 
             cursor: pointer; font-family: inherit; font-weight: bold;
-            box-shadow: var(--glow); margin-bottom: 50px;
+            box-shadow: var(--glow); margin-bottom: 30px;
         }
         #btn-start:hover { opacity: 0.8; }
+
+        /* DISCLAIMER STIL */
+        .disclaimer {
+            margin-top: auto; 
+            padding-top: 20px;
+            padding-bottom: 20px;
+            font-size: 0.9rem; 
+            opacity: 0.6; 
+            text-align: center; 
+            color: var(--led-color);
+            border-top: 1px dashed var(--led-dim);
+            width: 80%;
+        }
 
         h2 { text-shadow: var(--glow); margin-bottom: 20px; font-size: 4rem; font-weight: bold; letter-spacing: 5px; }
         h3 { margin: 0 0 10px 0; font-weight: normal; opacity: 0.8; font-size: 1.5rem; border-bottom: 1px solid var(--led-dim); padding-bottom: 5px; }
@@ -128,19 +140,49 @@
         @keyframes blinker { 50% { opacity: 0; } }
         body.no-blink .blink { animation: none; opacity: 1; }
 
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th { 
-            text-align: left; font-size: calc(1.5rem * var(--font-scale)); color: var(--led-color); opacity: 0.7; 
-            padding-bottom: 5px; border-bottom: 1px dashed var(--led-dim); font-weight: normal; text-shadow: none;
+        /* --- TABLICA - FINALNO FIXANJE --- */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            table-layout: fixed; /* OBAVEZNO: Omogućuje fiksne širine i točkice (...) */
         }
-        td { 
-            font-size: calc(clamp(2.5rem, 6vw, 6rem) * var(--font-scale)); padding: 0; white-space: nowrap; line-height: 1.1; 
-            overflow: hidden; text-overflow: ellipsis;
+        
+        /* Zajednička pravila za zaglavlje (th) i ćelije (td) */
+        th, td {
+            white-space: nowrap;      /* Zabranjuje prelamanje teksta */
+            overflow: hidden;         /* Sakriva višak teksta */
+            text-overflow: ellipsis;  /* Dodaje "..." ako ne stane */
+            padding: 0;
+            line-height: 1.1;
         }
 
-        .linija { width: 15%; }
-        .smjer { width: 55%; overflow: hidden; text-overflow: ellipsis; }
-        .vrijeme { width: 30%; text-align: right; }
+        th { 
+            text-align: left; 
+            font-size: calc(1.5rem * var(--font-scale)); 
+            color: var(--led-color); 
+            opacity: 0.7; 
+            padding-bottom: 5px; 
+            border-bottom: 1px dashed var(--led-dim); 
+            font-weight: normal; 
+            text-shadow: none;
+        }
+        
+        td { 
+            font-size: calc(clamp(2.5rem, 6vw, 6rem) * var(--font-scale)); 
+        }
+
+        /* OVDJE DEFINIRAMO ŠIRINE STUPACA PO REDNOM BROJU (1, 2, 3).
+           Ovo zahvaća i zaglavlje i podatke, pa se tablica više neće 'razbježati'.
+        */
+
+        /* 1. stupac (Linija): 15% - Usko, samo za broj */
+        th:nth-child(1), td:nth-child(1) { width: 15%; text-align: left; }
+
+        /* 2. stupac (Odredište): 60% - Široko, uzima najviše mjesta */
+        th:nth-child(2), td:nth-child(2) { width: 60%; text-align: left; }
+
+        /* 3. stupac (Vrijeme): 25% - Dovoljno za minute */
+        th:nth-child(3), td:nth-child(3) { width: 25%; text-align: right; }
 
         tr.sched td { color: var(--led-sched); text-shadow: var(--glow-sched); }
         tr.sched .vrijeme::after { content: "*"; position: relative; top: -5px; font-size: 0.6em; opacity: 0.8; margin-left: 2px; }
@@ -251,6 +293,10 @@
         </div>
 
         <button id="btn-start" onclick="finalizeSetup()">POKRENI DISPLAY</button>
+        
+        <div class="disclaimer">
+            Nezavisna aplikacija. Autor ne odgovara za točnost podataka.
+        </div>
     </div>
 
     <div id="display-screen">
@@ -515,6 +561,11 @@
                     tbody.innerHTML += `<tr class="${rowClass}"><td class="linija">${d.linija}</td><td class="smjer">${d.smjer}</td><td class="vrijeme">${minText}</td></tr>`;
                 });
             }
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(() => console.log('Service Worker Registered'));
         }
     </script>
 </body>
