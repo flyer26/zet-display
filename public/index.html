@@ -425,33 +425,42 @@
 
         const stationInput = document.getElementById('station-input');
         
-        stationInput.addEventListener('change', async (e) => {
+stationInput.addEventListener('change', async (e) => {
             const val = e.target.value.trim(); 
             if(!val) return;
-            const validStation = allStations.find(s => s.toLowerCase() === val.toLowerCase());
+
+            // 1. Probaj naći točan naziv (neovisno o velikim/malim slovima)
+            let validStation = allStations.find(s => s.toLowerCase() === val.toLowerCase());
             
+            // 2. Ako nema točnog, probaj naći prvu stanicu koja SADRŽI ovaj tekst (fallback)
+            if (!validStation) {
+                validStation = allStations.find(s => s.toLowerCase().includes(val.toLowerCase()));
+            }
+
             if (validStation) {
                 selectedStationName = validStation;
-                stationInput.value = validStation; 
+                stationInput.value = validStation; // Ispravi unos korisnika u točan naziv
                 stationInput.blur(); 
+                // Ovdje sada zovemo onu NOVU funkciju za destinacije koju smo maloprije dodali
                 await showDirectionSelector(validStation);
             } else {
-                alert("Stanica ne postoji!");
+                alert("Stanica nije pronađena! Probaj odabrati s popisa.");
                 e.target.value = ""; 
             }
         });
 
-        async function showDirectionSelector(stationName) {
+async function showDirectionSelector(stationName) {
             try {
-                const res = await fetch(`/api/board?station=${encodeURIComponent(stationName)}`);
-                const data = await res.json();
-                const destinations = [...new Set(data.map(d => d.smjer))].sort();
+                // PROMJENA: Sada zovemo /api/destinations umjesto /api/board
+                const res = await fetch(`/api/destinations?station=${encodeURIComponent(stationName)}`);
+                const destinations = await res.json();
+                // Sortiranje je već riješeno na serveru, ali može ostati i ovdje ako želiš
                 
                 const container = document.getElementById('checkbox-container');
                 container.innerHTML = ''; 
 
                 if (destinations.length === 0) {
-                    container.innerHTML = '<div style="color:var(--led-sched)">Nema aktivnih linija.<br>Pritisni POKRENI svejedno.</div>';
+                    container.innerHTML = '<div style="color:var(--led-sched)">Nema aktivnih linija danas.<br>Pritisni POKRENI svejedno.</div>';
                 } else {
                     destinations.forEach(dest => {
                         const row = document.createElement('label');
@@ -490,12 +499,21 @@
             enterKiosk(selectedStationName);
         }
 
-        function enterKiosk(stationName) {
+function enterKiosk(stationName) {
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('display-screen').style.display = 'flex';
+            
             const decoded = decodeURIComponent(stationName);
-            document.getElementById('station-title').innerText = decoded;
-            document.title = decoded;
+            
+            // --- NOVA LINIJA: Mičemo (1), (2) itd. samo za prikaz ---
+            // Regex traži razmak, otvorenu zagradu, brojke i zatvorenu zagradu na kraju
+            const displayName = decoded.replace(/\s\(\d+\)$/, ''); 
+            
+            document.getElementById('station-title').innerText = displayName;
+            document.title = displayName;
+            
+            // PAZI: Funkciji startBoard i dalje šaljemo 'decoded' (s brojem)
+            // jer server mora znati točno koju stanicu tražimo!
             startBoard(decoded);
         }
 
