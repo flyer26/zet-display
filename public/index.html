@@ -212,6 +212,52 @@
         .val-display { font-size: 1rem; opacity: 0.8; margin-left: 10px; }
         hr { width: 100%; border: 0; border-top: 1px dashed var(--led-dim); margin: 0; }
         #msg-box { text-align: center; font-size: 2rem; margin-top: 20vh; color: var(--led-dim); display: none; text-shadow: none; }
+
+
+        /* --- POPRAVAK ZA MOBITELE (FINALNI FIX) --- */
+        @media (max-width: 1000px) {
+            .corner-controls {
+                /* STATIC je ključ: element postaje "tvrd", dio toka stranice */
+                position: static !important; 
+                
+                /* Raširi ga preko cijelog vrha */
+                width: 100% !important;
+                display: flex !important;
+                justify-content: flex-end !important; /* Gumbi desno */
+                
+                /* Dodaj malo mesa da odgurne naslov još niže */
+                padding: 10px !important;
+                margin-bottom: 5px !important;
+                
+                /* Osiguraj pozadinu da izgleda kao pravi toolbar */
+                background-color: var(--bg-color);
+                z-index: 9999;
+                
+                flex-shrink: 0;
+            }
+
+            /* Tipke ostaju dovoljno velike */
+            .btn {
+                font-size: 1.1rem;
+                padding: 6px 12px;
+                margin-left: 5px;
+            }
+
+            /* Display ekran mora slušati i pomaknuti se dolje */
+            #display-screen {
+                height: auto !important; 
+                flex: 1 !important; /* Uzmi samo preostali prostor */
+                padding-top: 0 !important;
+                overflow: hidden;
+            }
+
+            /* Setup ekran također mičemo s vrha */
+            #setup-screen {
+                top: auto !important;
+                position: relative !important;
+                padding-top: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -425,7 +471,7 @@
 
         const stationInput = document.getElementById('station-input');
         
-stationInput.addEventListener('change', async (e) => {
+        stationInput.addEventListener('change', async (e) => {
             const val = e.target.value.trim(); 
             if(!val) return;
 
@@ -449,7 +495,7 @@ stationInput.addEventListener('change', async (e) => {
             }
         });
 
-async function showDirectionSelector(stationName) {
+        async function showDirectionSelector(stationName) {
             try {
                 // PROMJENA: Sada zovemo /api/destinations umjesto /api/board
                 const res = await fetch(`/api/destinations?station=${encodeURIComponent(stationName)}`);
@@ -499,7 +545,7 @@ async function showDirectionSelector(stationName) {
             enterKiosk(selectedStationName);
         }
 
-function enterKiosk(stationName) {
+        function enterKiosk(stationName) {
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('display-screen').style.display = 'flex';
             
