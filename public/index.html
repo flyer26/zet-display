@@ -189,7 +189,9 @@
 
         /* --- KONTROLE --- */
         .corner-controls { position: fixed; top: 10px; right: 10px; display: flex; gap: 10px; z-index: 200; }
-        :fullscreen .corner-controls { display: none; }
+        
+        /* Obrisala sam onaj stari :fullscreen ovdje jer ga pregazi media query dolje. 
+           Novi, jači fix je na dnu CSS-a! */
         
         .btn { 
             background: #000; border: 1px solid var(--led-color); color: var(--led-color); 
@@ -217,47 +219,43 @@
         /* --- POPRAVAK ZA MOBITELE (FINALNI FIX) --- */
         @media (max-width: 1000px) {
             .corner-controls {
-                /* STATIC je ključ: element postaje "tvrd", dio toka stranice */
                 position: static !important; 
-                
-                /* Raširi ga preko cijelog vrha */
                 width: 100% !important;
                 display: flex !important;
-                justify-content: flex-end !important; /* Gumbi desno */
-                
-                /* Dodaj malo mesa da odgurne naslov još niže */
+                justify-content: flex-end !important;
                 padding: 10px !important;
                 margin-bottom: 5px !important;
-                
-                /* Osiguraj pozadinu da izgleda kao pravi toolbar */
                 background-color: var(--bg-color);
                 z-index: 9999;
-                
                 flex-shrink: 0;
             }
 
-            /* Tipke ostaju dovoljno velike */
             .btn {
                 font-size: 1.1rem;
                 padding: 6px 12px;
                 margin-left: 5px;
             }
 
-            /* Display ekran mora slušati i pomaknuti se dolje */
             #display-screen {
                 height: auto !important; 
-                flex: 1 !important; /* Uzmi samo preostali prostor */
+                flex: 1 !important; 
                 padding-top: 0 !important;
                 overflow: hidden;
             }
 
-            /* Setup ekran također mičemo s vrha */
             #setup-screen {
                 top: auto !important;
                 position: relative !important;
                 padding-top: 20px;
             }
         }
+
+/* --- SUPER-FORCE SAKRIVANJE U FULLSCREENU --- */
+        /* Moraju biti odvojeni, inače preglednici ignoriraju sve! */
+        :fullscreen .corner-controls { display: none !important; }
+        :-webkit-full-screen .corner-controls { display: none !important; }
+        :-moz-full-screen .corner-controls { display: none !important; }
+
     </style>
 </head>
 <body>
