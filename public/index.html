@@ -13,7 +13,7 @@
     <meta name="theme-color" content="#000000">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 <style>
         /* --- TEME I BOJE --- */
         :root {
@@ -23,8 +23,11 @@
             --bg-color: #111;
             --glow: 0 0 4px var(--led-color), 0 0 8px var(--led-color);
             --glow-sched: 0 0 3px var(--led-sched);
+            --font-main: 'VT323', monospace;
             --font-scale: 1.0; 
             --brightness: 1.0; 
+            --border-style: 1px dashed var(--led-dim);
+            --header-border: 3px solid var(--led-color);
         }
 
         body.green-mode {
@@ -35,12 +38,38 @@
             --glow-sched: none; 
         }
 
+        /* --- CLEAN MODE (PREGLEDNA TABLICA) --- */
+        body.clean-mode {
+            --led-color: #000000;
+            --led-sched: #666666;
+            --led-dim: #eeeeee;
+            --bg-color: #ffffff;
+            --glow: none;
+            --glow-sched: none;
+            --font-main: 'Roboto', sans-serif;
+            --border-style: 1px solid #ddd;
+            --header-border: 3px solid #000;
+            background-image: none !important;
+            text-shadow: none !important;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            body.clean-mode {
+                --led-color: #ffffff;
+                --led-sched: #aaaaaa;
+                --led-dim: #333333;
+                --bg-color: #121212;
+                --border-style: 1px solid #333;
+                --header-border: 3px solid #fff;
+            }
+        }
+
         * { box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
             color: var(--led-color);
-            font-family: 'VT323', monospace;
+            font-family: var(--font-main);
             margin: 0;
             height: 100vh;
             display: flex;
@@ -49,43 +78,39 @@
             background-image: radial-gradient(var(--led-dim) 30%, transparent 35%);
             background-size: 4px 4px;
             text-shadow: var(--glow);
-            transition: color 0.3s, text-shadow 0.3s, filter 0.3s;
+            transition: color 0.3s, background 0.3s;
             filter: brightness(var(--brightness));
-        }
-
-        /* --- BURN-IN ZAŠTITA (PIXEL SHIFT) --- */
-        @keyframes pixel-shift {
-            0% { transform: translate(0px, 0px); }
-            25% { transform: translate(2px, 1px); }
-            50% { transform: translate(0px, 2px); }
-            75% { transform: translate(-2px, 1px); }
-            100% { transform: translate(0px, 0px); }
-        }
-        .burn-in-protection {
-            animation: pixel-shift 60s infinite linear;
         }
 
         /* --- SETUP EKRAN --- */
         #setup-screen {
             display: flex; flex-direction: column; align-items: center;
             height: 100%; background: var(--bg-color); z-index: 100; position: absolute; width: 100%; top: 0;
-            background-image: radial-gradient(var(--led-dim) 30%, transparent 35%);
-            background-size: 4px 4px;
+            background-image: inherit; 
+            background-size: inherit;
             overflow-y: auto; padding: 40px 20px;
         }
         
-        .input-group { position: relative; width: 80%; max-width: 500px; margin-bottom: 20px; }
+        .input-group { position: relative; width: 80%; max-width: 500px; margin-bottom: 20px; display: flex; gap: 10px; }
+        
         input[type="text"] {
-            width: 100%; padding: 15px; font-size: 2rem; background: #000;
+            width: 100%; padding: 15px; font-size: 2rem; background: var(--bg-color);
             color: var(--led-color); border: 2px solid var(--led-color);
             border-radius: 4px; text-align: center; font-family: inherit; 
             text-transform: uppercase; box-shadow: var(--glow); outline: none;
         }
         
+        .btn-loc {
+            padding: 0 15px; font-size: 1.5rem; cursor: pointer;
+            background: var(--bg-color); color: var(--led-color);
+            border: 2px solid var(--led-color); border-radius: 4px;
+            box-shadow: var(--glow); font-family: inherit;
+        }
+        
         .option-box {
             display: none; flex-direction: column; gap: 10px; width: 80%; max-width: 500px;
-            margin-bottom: 20px; background: rgba(0,0,0,0.8);
-            border: 1px dashed var(--led-dim); padding: 15px;
+            margin-bottom: 20px; background: rgba(0,0,0,0.1);
+            border: var(--border-style); padding: 15px;
         }
         
         .checkbox-row {
@@ -98,27 +123,18 @@
         
         #btn-start {
             display: none; font-size: 2rem; padding: 10px 40px; 
-            background: var(--led-color); color: #000; border: none; 
+            background: var(--led-color); color: var(--bg-color); border: none; 
             cursor: pointer; font-family: inherit; font-weight: bold;
             box-shadow: var(--glow); margin-bottom: 30px;
         }
-        #btn-start:hover { opacity: 0.8; }
-
-        /* DISCLAIMER STIL */
+        
         .disclaimer {
-            margin-top: auto; 
-            padding-top: 20px;
-            padding-bottom: 20px;
-            font-size: 0.9rem; 
-            opacity: 0.6; 
-            text-align: center; 
-            color: var(--led-color);
-            border-top: 1px dashed var(--led-dim);
-            width: 80%;
+            margin-top: auto; padding: 20px 0; font-size: 0.9rem; opacity: 0.6; text-align: center; 
+            color: var(--led-color); border-top: var(--border-style); width: 80%;
         }
 
         h2 { text-shadow: var(--glow); margin-bottom: 20px; font-size: 4rem; font-weight: bold; letter-spacing: 5px; }
-        h3 { margin: 0 0 10px 0; font-weight: normal; opacity: 0.8; font-size: 1.5rem; border-bottom: 1px solid var(--led-dim); padding-bottom: 5px; }
+        h3 { margin: 0 0 10px 0; font-weight: normal; opacity: 0.8; font-size: 1.5rem; border-bottom: var(--border-style); padding-bottom: 5px; }
 
         /* --- DISPLAY EKRAN --- */
         #display-screen {
@@ -128,9 +144,8 @@
         }
 
         header {
-            border-bottom: 3px solid var(--led-color); margin-bottom: 5px; padding-bottom: 5px;
+            border-bottom: var(--header-border); margin-bottom: 5px; padding-bottom: 5px;
             display: flex; justify-content: space-between; align-items: flex-end;
-            box-shadow: 0 3px 5px -3px var(--led-color);
             flex-shrink: 0;
         }
         h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); text-transform: uppercase; line-height: 1; }
@@ -140,48 +155,19 @@
         @keyframes blinker { 50% { opacity: 0; } }
         body.no-blink .blink { animation: none; opacity: 1; }
 
-        /* --- TABLICA - FINALNO FIXANJE --- */
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            table-layout: fixed; /* OBAVEZNO: Omogućuje fiksne širine i točkice (...) */
-        }
-        
-        /* Zajednička pravila za zaglavlje (th) i ćelije (td) */
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td {
-            white-space: nowrap;      /* Zabranjuje prelamanje teksta */
-            overflow: hidden;         /* Sakriva višak teksta */
-            text-overflow: ellipsis;  /* Dodaje "..." ako ne stane */
-            padding: 0;
-            line-height: 1.1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0; line-height: 1.1;
         }
-
         th { 
-            text-align: left; 
-            font-size: calc(1.5rem * var(--font-scale)); 
-            color: var(--led-color); 
-            opacity: 0.7; 
-            padding-bottom: 5px; 
-            border-bottom: 1px dashed var(--led-dim); 
-            font-weight: normal; 
-            text-shadow: none;
+            text-align: left; font-size: calc(1.5rem * var(--font-scale)); 
+            color: var(--led-color); opacity: 0.7; padding-bottom: 5px; 
+            border-bottom: var(--border-style); font-weight: normal; text-shadow: none;
         }
-        
-        td { 
-            font-size: calc(clamp(2.5rem, 6vw, 6rem) * var(--font-scale)); 
-        }
+        td { font-size: calc(clamp(2.5rem, 6vw, 6rem) * var(--font-scale)); }
 
-        /* OVDJE DEFINIRAMO ŠIRINE STUPACA PO REDNOM BROJU (1, 2, 3).
-           Ovo zahvaća i zaglavlje i podatke, pa se tablica više neće 'razbježati'.
-        */
-
-        /* 1. stupac (Linija): 15% - Usko, samo za broj */
         th:nth-child(1), td:nth-child(1) { width: 15%; text-align: left; }
-
-        /* 2. stupac (Odredište): 60% - Široko, uzima najviše mjesta */
         th:nth-child(2), td:nth-child(2) { width: 60%; text-align: left; }
-
-        /* 3. stupac (Vrijeme): 25% - Dovoljno za minute */
         th:nth-child(3), td:nth-child(3) { width: 25%; text-align: right; }
 
         tr.sched td { color: var(--led-sched); text-shadow: var(--glow-sched); }
@@ -189,74 +175,71 @@
 
         /* --- KONTROLE --- */
         .corner-controls { position: fixed; top: 10px; right: 10px; display: flex; gap: 10px; z-index: 200; }
-        
-        /* Obrisala sam onaj stari :fullscreen ovdje jer ga pregazi media query dolje. 
-           Novi, jači fix je na dnu CSS-a! */
-        
         .btn { 
-            background: #000; border: 1px solid var(--led-color); color: var(--led-color); 
+            background: var(--bg-color); border: 1px solid var(--led-color); color: var(--led-color); 
             cursor: pointer; font-size: 1.2rem; padding: 5px 10px; font-family: inherit; 
             text-transform: uppercase; box-shadow: var(--glow-sched);
         }
         .btn:hover { background: var(--led-dim); }
 
-        /* --- SETTINGS PANEL --- */
+        /* --- SETTINGS PANEL (POPRAVLJENO SKROLANJE) --- */
         #settings-panel {
             display: none; position: absolute; top: 50px; right: 10px; 
-            background: #000; border: 2px solid var(--led-color); padding: 15px;
+            background: var(--bg-color); border: 2px solid var(--led-color); padding: 15px;
             z-index: 201; flex-direction: column; gap: 15px; width: 320px;
             box-shadow: var(--glow);
+            /* KLJUČNO: Ograniči visinu i omogući skrolanje ako ne stane na ekran */
+            max-height: 85vh; 
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Glatko skrolanje na iPhoneu */
         }
         .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; }
         .setting-col { display: flex; flex-direction: column; gap: 5px; }
         label { cursor: pointer; }
         input[type="range"] { width: 100%; accent-color: var(--led-color); cursor: pointer; }
         .val-display { font-size: 1rem; opacity: 0.8; margin-left: 10px; }
-        hr { width: 100%; border: 0; border-top: 1px dashed var(--led-dim); margin: 0; }
+        hr { width: 100%; border: 0; border-top: var(--border-style); margin: 0; }
         #msg-box { text-align: center; font-size: 2rem; margin-top: 20vh; color: var(--led-dim); display: none; text-shadow: none; }
 
-
-        /* --- POPRAVAK ZA MOBITELE (FINALNI FIX) --- */
+        /* --- MOBITEL FIX (GUMBI IZNAD TEKSTA) --- */
         @media (max-width: 1000px) {
             .corner-controls {
+                /* STATIC: Fizički zauzima prostor i gura sve ispod sebe */
                 position: static !important; 
-                width: 100% !important;
-                display: flex !important;
-                justify-content: flex-end !important;
-                padding: 10px !important;
+                width: 100% !important; 
+                
+                /* FLEX bez !important da Fullscreen može sakriti */
+                display: flex; 
+                
+                justify-content: flex-end !important; 
+                padding: 10px !important; 
+                
+                /* Osiguravamo da se ne vidi tekst ispod gumba */
+                background-color: var(--bg-color); 
                 margin-bottom: 5px !important;
-                background-color: var(--bg-color);
-                z-index: 9999;
+                z-index: 9999; 
                 flex-shrink: 0;
             }
-
-            .btn {
-                font-size: 1.1rem;
-                padding: 6px 12px;
-                margin-left: 5px;
-            }
-
-            #display-screen {
-                height: auto !important; 
-                flex: 1 !important; 
-                padding-top: 0 !important;
-                overflow: hidden;
-            }
-
-            #setup-screen {
-                top: auto !important;
-                position: relative !important;
-                padding-top: 20px;
+            .btn { font-size: 1.1rem; padding: 6px 12px; margin-left: 5px; }
+            
+            /* Osiguravamo da display uzme preostali prostor i skrola interno */
+            #display-screen { height: auto !important; flex: 1 !important; padding-top: 0 !important; overflow: hidden; }
+            #setup-screen { top: auto !important; position: relative !important; padding-top: 20px; }
+            
+            /* Settings na mobitelu - malo širi */
+            #settings-panel {
+                width: 90%;
+                right: 5%;
+                top: 60px; /* Odmak od gumba */
             }
         }
-        
 
-/* --- SUPER-FORCE SAKRIVANJE U FULLSCREENU --- */
-        /* Moraju biti odvojeni, inače preglednici ignoriraju sve! */
-        :fullscreen .corner-controls { display: none !important; }
-        :-webkit-full-screen .corner-controls { display: none !important; }
-        :-moz-full-screen .corner-controls { display: none !important; }
-
+        /* --- SAKRIVANJE GUMBA U FULLSCREENU (OVO SAD RADI) --- */
+        :fullscreen .corner-controls, 
+        :-webkit-full-screen .corner-controls, 
+        :-moz-full-screen .corner-controls { 
+            display: none !important; 
+        }
     </style>
 </head>
 <body>
@@ -269,6 +252,10 @@
 
     <div id="settings-panel">
         <div class="setting-row">
+            <label for="chk-clean">PREGLEDNA TABLICA</label>
+            <input type="checkbox" id="chk-clean" onchange="updateSettings()">
+        </div>
+        <div class="setting-row">
             <label for="chk-green">ZELENI EKRAN</label>
             <input type="checkbox" id="chk-green" onchange="updateSettings()">
         </div>
@@ -280,10 +267,8 @@
             <label for="chk-sad">PIŠI "SAD"</label>
             <input type="checkbox" id="chk-sad" onchange="updateSettings()">
         </div>
-        <div class="setting-row">
-            <label for="chk-burnin">BURN-IN ZAŠTITA</label>
-            <input type="checkbox" id="chk-burnin" onchange="updateSettings()">
-        </div>
+        <hr>
+        <button class="btn" style="width:100%; color: var(--led-sched); border-color: var(--led-sched);" onclick="clearDefaultStation()">ZABORAVI FAVORIT</button>
         <hr>
         <div class="setting-col">
             <div style="display:flex; justify-content:space-between;">
@@ -292,7 +277,6 @@
             </div>
             <input type="range" id="rng-bright" min="10" max="100" value="100" step="5" oninput="updateSettings()">
         </div>
-        <hr>
         <div class="setting-col">
             <div style="display:flex; justify-content:space-between;">
                 <label>BROJ REDAKA:</label>
@@ -316,6 +300,7 @@
         
         <div class="input-group">
             <input type="text" list="stations-list" id="station-input" placeholder="UPIŠI STANICU..." autocomplete="off">
+            <button class="btn-loc" onclick="locateMe()" title="Lociraj me">📍</button>
             <datalist id="stations-list"></datalist>
         </div>
         
@@ -334,6 +319,13 @@
             <div class="checkbox-row">
                 <input type="checkbox" id="setup-chk-buses" checked>
                 <span>AUTOBUSI</span>
+            </div>
+        </div>
+
+        <div id="favorite-box" class="option-box" style="display:none; align-items:center;">
+             <div class="checkbox-row">
+                <input type="checkbox" id="chk-save-fav">
+                <span style="font-size: 1.2rem">ZAPAMTI KAO FAVORIT</span>
             </div>
         </div>
 
@@ -364,6 +356,7 @@
 
     <script>
         let settings = { 
+            cleanMode: false,
             greenMode: false, 
             blinking: true, 
             useSadText: false, 
@@ -384,14 +377,10 @@
             if (saved) settings = JSON.parse(saved);
             
             // UI Update
+            document.getElementById('chk-clean').checked = settings.cleanMode;
             document.getElementById('chk-green').checked = settings.greenMode;
             document.getElementById('chk-blink').checked = settings.blinking;
             document.getElementById('chk-sad').checked = settings.useSadText;
-            document.getElementById('chk-burnin').checked = settings.burnInProtection;
-
-            // Setup ekran
-            document.getElementById('setup-chk-trams').checked = settings.showTrams;
-            document.getElementById('setup-chk-buses').checked = settings.showBuses;
 
             // Sliders
             document.getElementById('rng-rows').value = settings.maxRows || 15;
@@ -404,13 +393,28 @@
             document.getElementById('disp-bright').innerText = (settings.brightness || 100) + "%";
             
             applyStyles();
+            checkAutoLogin();
+        }
+
+        function checkAutoLogin() {
+            const savedStation = localStorage.getItem('zet_favorite_station');
+            const urlStation = new URLSearchParams(window.location.search).get('station');
+
+            if (!urlStation && savedStation) {
+                const fav = JSON.parse(savedStation);
+                selectedStationName = fav.name;
+                activeFilters = fav.filters;
+                settings.showTrams = fav.showTrams;
+                settings.showBuses = fav.showBuses;
+                enterKiosk(selectedStationName);
+            }
         }
 
         function updateSettings() {
+            settings.cleanMode = document.getElementById('chk-clean').checked;
             settings.greenMode = document.getElementById('chk-green').checked;
             settings.blinking = document.getElementById('chk-blink').checked;
             settings.useSadText = document.getElementById('chk-sad').checked;
-            settings.burnInProtection = document.getElementById('chk-burnin').checked;
             
             settings.maxRows = parseInt(document.getElementById('rng-rows').value);
             document.getElementById('disp-rows').innerText = settings.maxRows;
@@ -428,16 +432,10 @@
         }
 
         function applyStyles() {
+            settings.cleanMode ? document.body.classList.add('clean-mode') : document.body.classList.remove('clean-mode');
             settings.greenMode ? document.body.classList.add('green-mode') : document.body.classList.remove('green-mode');
             !settings.blinking ? document.body.classList.add('no-blink') : document.body.classList.remove('no-blink');
             
-            const display = document.getElementById('display-screen');
-            if(settings.burnInProtection) {
-                display.classList.add('burn-in-protection');
-            } else {
-                display.classList.remove('burn-in-protection');
-            }
-
             document.documentElement.style.setProperty('--font-scale', settings.fontSize / 100);
             document.documentElement.style.setProperty('--brightness', settings.brightness / 100);
         }
@@ -473,39 +471,61 @@
         stationInput.addEventListener('change', async (e) => {
             const val = e.target.value.trim(); 
             if(!val) return;
-
-            // 1. Probaj naći točan naziv (neovisno o velikim/malim slovima)
+            // Fleksibilna pretraga
             let validStation = allStations.find(s => s.toLowerCase() === val.toLowerCase());
-            
-            // 2. Ako nema točnog, probaj naći prvu stanicu koja SADRŽI ovaj tekst (fallback)
-            if (!validStation) {
-                validStation = allStations.find(s => s.toLowerCase().includes(val.toLowerCase()));
-            }
+            if (!validStation) validStation = allStations.find(s => s.toLowerCase().includes(val.toLowerCase()));
 
             if (validStation) {
                 selectedStationName = validStation;
-                stationInput.value = validStation; // Ispravi unos korisnika u točan naziv
+                stationInput.value = validStation; 
                 stationInput.blur(); 
-                // Ovdje sada zovemo onu NOVU funkciju za destinacije koju smo maloprije dodali
                 await showDirectionSelector(validStation);
             } else {
-                alert("Stanica nije pronađena! Probaj odabrati s popisa.");
+                alert("Stanica nije pronađena!");
                 e.target.value = ""; 
             }
         });
 
+        // --- LOCIRAJ ME ---
+        function locateMe() {
+            if (!navigator.geolocation) {
+                alert("Geolokacija nije podržana u ovom pregledniku.");
+                return;
+            }
+            stationInput.placeholder = "TRAŽIM...";
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                try {
+                    const res = await fetch(`/api/nearest?lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+                    const data = await res.json();
+                    
+                    if (data.name) {
+                        selectedStationName = data.name;
+                        stationInput.value = data.name;
+                        await showDirectionSelector(data.name);
+                    } else {
+                        alert("Nema stanice u blizini (5km).");
+                        stationInput.placeholder = "UPIŠI STANICU...";
+                    }
+                } catch (e) {
+                    console.error(e);
+                    stationInput.placeholder = "GREŠKA";
+                }
+            }, () => {
+                alert("Nije moguće dohvatiti lokaciju.");
+                stationInput.placeholder = "UPIŠI STANICU...";
+            });
+        }
+
         async function showDirectionSelector(stationName) {
             try {
-                // PROMJENA: Sada zovemo /api/destinations umjesto /api/board
                 const res = await fetch(`/api/destinations?station=${encodeURIComponent(stationName)}`);
                 const destinations = await res.json();
-                // Sortiranje je već riješeno na serveru, ali može ostati i ovdje ako želiš
                 
                 const container = document.getElementById('checkbox-container');
                 container.innerHTML = ''; 
 
                 if (destinations.length === 0) {
-                    container.innerHTML = '<div style="color:var(--led-sched)">Nema aktivnih linija danas.<br>Pritisni POKRENI svejedno.</div>';
+                    container.innerHTML = '<div style="color:var(--led-sched)">Nema aktivnih linija.<br>Pritisni POKRENI svejedno.</div>';
                 } else {
                     destinations.forEach(dest => {
                         const row = document.createElement('label');
@@ -524,6 +544,7 @@
                 
                 document.getElementById('direction-selector').style.display = 'flex';
                 document.getElementById('vehicle-selector').style.display = 'flex';
+                document.getElementById('favorite-box').style.display = 'flex'; // Prikaži opciju za favorit
                 document.getElementById('btn-start').style.display = 'block';
 
             } catch (e) { console.error(e); }
@@ -536,6 +557,17 @@
             settings.showTrams = document.getElementById('setup-chk-trams').checked;
             settings.showBuses = document.getElementById('setup-chk-buses').checked;
             localStorage.setItem('zet_settings', JSON.stringify(settings));
+
+            // SPREMI FAVORIT AKO JE OZNAČENO
+            if (document.getElementById('chk-save-fav').checked) {
+                const fav = {
+                    name: selectedStationName,
+                    filters: activeFilters,
+                    showTrams: settings.showTrams,
+                    showBuses: settings.showBuses
+                };
+                localStorage.setItem('zet_favorite_station', JSON.stringify(fav));
+            }
             
             let newUrl = `?station=${encodeURIComponent(selectedStationName)}`;
             if (activeFilters.length > 0) newUrl += `&filter=${encodeURIComponent(activeFilters.join(','))}`;
@@ -544,25 +576,30 @@
             enterKiosk(selectedStationName);
         }
 
+        function clearDefaultStation() {
+            localStorage.removeItem('zet_favorite_station');
+            alert("Favorit obrisan. Idući put će se otvoriti izbornik.");
+            toggleSettings();
+        }
+
         function enterKiosk(stationName) {
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('display-screen').style.display = 'flex';
             
             const decoded = decodeURIComponent(stationName);
-            
-            // --- NOVA LINIJA: Mičemo (1), (2) itd. samo za prikaz ---
-            // Regex traži razmak, otvorenu zagradu, brojke i zatvorenu zagradu na kraju
             const displayName = decoded.replace(/\s\(\d+\)$/, ''); 
             
             document.getElementById('station-title').innerText = displayName;
             document.title = displayName;
-            
-            // PAZI: Funkciji startBoard i dalje šaljemo 'decoded' (s brojem)
-            // jer server mora znati točno koju stanicu tražimo!
             startBoard(decoded);
         }
 
-        function exitKiosk() { window.location.href = window.location.pathname.split('?')[0]; }
+        function exitKiosk() { 
+            // Ako izađemo, brišemo query parametre da se ne vrati odmah
+            window.history.pushState({}, '', window.location.pathname);
+            window.location.reload();
+        }
+
         function toggleFullScreen() { !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen(); }
 
         function startBoard(stationName) {
@@ -627,8 +664,7 @@
         }
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-            .then(() => console.log('Service Worker Registered'));
+            navigator.serviceWorker.register('/sw.js').then(() => console.log('Service Worker Registered'));
         }
     </script>
 </body>
